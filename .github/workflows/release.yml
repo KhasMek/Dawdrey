@@ -1,0 +1,78 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Organize Artifacts
+        run: |
+          mkdir -p artifacts
+          
+          echo "Looking for built plugins..."
+          # Copy Component (AU)
+          find build -name "Dawdrey.component" -type d -exec cp -R {} artifacts/ \;
+          # Copy VST3
+          find build -name "Dawdrey.vst3" -type d -exec cp -R {} artifacts/ \;
+          # Copy Standalone App
+          find build -name "Dawdrey.app" -type d -exec cp -R {} artifacts/ \;
+          
+          echo "Artifacts gathered:"
+          ls -R artifacts
+
+      - name: Zip Artifacts
+        run: |
+          cd artifacts
+          zip -r ../Dawdrey-macOS.zip .
+          cd ..
+
+      - name: Generate release notes
+        run: |
+          cat > RELEASE_NOTES.md << 'EOF'
+          # Dawdrey ${{ inputs.version }}
+
+          ## Installation
+
+          1. Download `Dawdrey-${{ inputs.version }}.zip`
+          2. Extract the ZIP file
+          3. Move the plugin to your plugins folder. Note: AU is a macOS only format.
+
+          See commit history for details.
+          EOF
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          files: Dawdrey-${{ inputs.version }}.zip
+          prerelease: ${{ inputs.prerelease }}
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
