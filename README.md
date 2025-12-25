@@ -76,5 +76,4 @@ This project uses the original DSP code as a base, adapted for the JUCE framewor
    Create a build directory and generate the build files:
    ```bash
    cmake -B build -S . && cmake --build build --config Release
-   cmake -B build -DCMAKE_BUILD_TYPE=Release
    ```
