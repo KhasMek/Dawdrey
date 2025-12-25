@@ -2,7 +2,7 @@
 
 A love letter to Audrey II by Infrasonic Audio and Synthux Academy.
 
-**Dawdrey** is a software port of the **Audrey II** feedback synthesizer, originally designed by **Synthux Academy** and **Infrasonic Audio**. This plugin brings the "horrorscape" sounds of the hardware unit into your DAW as a VST3 and AU plugin.
+Dawdrey is a software port of the Audrey II feedback synthesizer, originally designed by **Synthux Academy** and **Infrasonic Audio**. This plugin brings the "horrorscape" sounds of the hardware unit into your DAW as a VST3 and AU plugin.
 
 ## Vibe Coded Notice
 
@@ -45,14 +45,14 @@ I used Google Antigravity and Gemini 3 to assist and expedite the development of
 
 This project is a fan-made port and is **not affiliated with, endorsed by, or supported by Synthux Academy or Infrasonic Audio**.
 
-To purchase the amazing devices this plugin is based on, please visit:
+To support the creators that designed the hardware this plugin is based on, please visit:
 
  -   **Synthux Academy**: [https://synthux.academy](https://synthux.academy)
  -   **Infrasonic Audio**: [https://infrasonicaudio.com](https://infrasonicaudio.com)
 
 ## Credits
 
- -   **Original DSP & Firmware**: Nick Donaldson (Infrasonic Audio)
+ -   **Original Idea and Firmware Design**: Nick Donaldson (Infrasonic Audio)
  -   **Hardware Design and Hardware Release**: Roey (Synthux Academy)
  -   **Original Source Code**: [https://github.com/Synthux-Academy/simple-designer-instruments/tree/main/official/audrey-ii](https://github.com/Synthux-Academy/simple-designer-instruments/tree/main/official/audrey-ii)
 
@@ -72,19 +72,9 @@ This project uses the original DSP code as a base, adapted for the JUCE framewor
    git submodule update --init --recursive
    ```
 
-3. **Configure CMake**
+3. **Configure CMake, Build and Install**
    Create a build directory and generate the build files:
    ```bash
    cmake -B build -S . && cmake --build build --config Release
    cmake -B build -DCMAKE_BUILD_TYPE=Release
-   ```
-
-4. **Compile the Plugin**
-   ```bash
-   cmake --build build --config Release
-   ```
-
-5. **Install the Plugin**
-   ```bash
-   cmake --install build --config Release
    ```
