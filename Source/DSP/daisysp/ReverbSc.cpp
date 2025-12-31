@@ -1,4 +1,5 @@
 #include "ReverbSc.h"
+#include <cstdint>
 #include <math.h>
 
 #ifndef M_PI
