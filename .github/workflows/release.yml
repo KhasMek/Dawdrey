@@ -14,12 +14,9 @@ on:
         default: false
 
 jobs:
-  release:
-    name: Build & Release
+  release_macos:
+    name: Build MacOS
     runs-on: macos-latest
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,7 +32,7 @@ jobs:
       - name: Organize Artifacts
         run: |
           mkdir -p artifacts
-          
+
           echo "Looking for built plugins..."
           # Copy Component (AU)
           find build -name "Dawdrey.component" -type d -exec cp -R {} artifacts/ \;
@@ -43,7 +40,7 @@ jobs:
           find build -name "Dawdrey.vst3" -type d -exec cp -R {} artifacts/ \;
           # Copy Standalone App
           find build -name "Dawdrey.app" -type d -exec cp -R {} artifacts/ \;
-          
+
           echo "Artifacts gathered:"
           ls -R artifacts
 
@@ -53,25 +50,156 @@ jobs:
           zip -r ../Dawdrey-macOS.zip .
           cd ..
 
-      - name: Generate release notes
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dawdrey-MacOS
+          path: Dawdrey-macOS.zip
+
+  release_windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Organize Artifacts
+        run: |
+          mkdir artifacts
+
+          echo "Looking for built plugins..."
+
+          # Copy VST3
+          Get-ChildItem -Path build -Recurse -Filter "Dawdrey.vst3" | ForEach-Object {
+            Write-Host "Found VST3: $($_.FullName)"
+            Copy-Item -Path $_.FullName -Destination "artifacts/" -Recurse -Force
+          }
+
+          # Copy Standalone
+          Get-ChildItem -Path build -Recurse -Filter "Dawdrey.exe" | ForEach-Object {
+            Write-Host "Found Standalone: $($_.FullName)"
+            Copy-Item -Path $_.FullName -Destination "artifacts/" -Force
+          }
+
+          echo "Artifacts gathered:"
+          Get-ChildItem -Recurse artifacts
+
+      - name: Zip Artifacts
+        run: |
+          Compress-Archive -Path artifacts/* -DestinationPath Dawdrey-Windows.zip
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dawdrey-Windows
+          path: Dawdrey-Windows.zip
+
+  release_linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libx11-dev libxinerama-dev libxext-dev libfreetype6-dev libwebkit2gtk-4.0-dev libglu1-mesa-dev libxcursor-dev libxrandr-dev
+
+      - name: Configure CMake
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Organize Artifacts
+        run: |
+          mkdir artifacts
+
+          echo "Looking for built plugins..."
+          # Copy VST3
+          # Linux find is standard
+          find build -name "Dawdrey.vst3" -exec cp -R {} artifacts/ \;
+
+          # Copy Standalone
+          # JUCE Standalone on Linux is typically just the binary name, e.g. "Dawdrey"
+          find build -type f -executable -name "Dawdrey" -exec cp {} artifacts/ \;
+
+          echo "Artifacts gathered:"
+          ls -R artifacts
+
+      - name: Zip Artifacts
+        run: |
+          cd artifacts
+          zip -r ../Dawdrey-Linux.zip .
+          cd ..
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dawdrey-Linux
+          path: Dawdrey-Linux.zip
+
+  publish:
+    name: Publish Release
+    needs: [release_macos, release_windows, release_linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Display Downloaded Artifacts
+        run: ls -R dist
+
+      - name: Generate Release Notes
         run: |
           cat > RELEASE_NOTES.md << 'EOF'
           # Dawdrey ${{ inputs.version }}
 
+          ## Downloads
+
+          - **MacOS**: `Dawdrey-MacOS/Dawdrey-macOS.zip`
+          - **Windows**: `Dawdrey-Windows/Dawdrey-Windows.zip`
+          - **Linux**: `Dawdrey-Linux/Dawdrey-Linux.zip`
+
           ## Installation
 
-          1. Download `Dawdrey-${{ inputs.version }}.zip`
-          2. Extract the ZIP file
-          3. Move the plugin to your plugins folder. Note: AU is a macOS only format.
+          ### MacOS
+          1. Unzip `Dawdrey-macOS.zip`
+          2. Copy `Dawdrey.component` to `/Library/Audio/Plug-Ins/Components` or `~/Library/Audio/Plug-Ins/Components`
+          3. Copy `Dawdrey.vst3` to `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3`
+
+          ### Windows
+          1. Unzip `Dawdrey-Windows.zip`
+          2. Copy `Dawdrey.vst3` to `C:\Program Files\Common Files\VST3`
+
+          ### Linux
+          1. Unzip `Dawdrey-Linux.zip`
+          2. Copy `Dawdrey.vst3` to `~/.vst3` or `/usr/lib/vst3`
 
           See commit history for details.
           EOF
-      
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ inputs.version }}
-          files: Dawdrey-${{ inputs.version }}.zip
+          files: dist/**/*.zip
+          body_path: RELEASE_NOTES.md
           prerelease: ${{ inputs.prerelease }}
           draft: false
         env:
