@@ -78,7 +78,7 @@ jobs:
           echo "Looking for built plugins..."
 
           # Copy VST3
-          Get-ChildItem -Path build -Recurse -Filter "Dawdrey.vst3" | ForEach-Object {
+          Get-ChildItem -Path build -Recurse -Filter "Dawdrey.vst3" -Directory | ForEach-Object {
             Write-Host "Found VST3: $($_.FullName)"
             Copy-Item -Path $_.FullName -Destination "artifacts/" -Recurse -Force
           }
@@ -128,8 +128,8 @@ jobs:
 
           echo "Looking for built plugins..."
           # Copy VST3
-          # Linux find is standard
-          find build -name "Dawdrey.vst3" -exec cp -R {} artifacts/ \;
+          # Linux find is standard, ensure we only copy the bundle directory
+          find build -name "Dawdrey.vst3" -type d -exec cp -R {} artifacts/ \;
 
           # Copy Standalone
           # JUCE Standalone on Linux is typically just the binary name, e.g. "Dawdrey"
