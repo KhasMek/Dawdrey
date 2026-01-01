@@ -57,8 +57,11 @@ jobs:
           path: Dawdrey-macOS.zip
 
   release_windows:
-    name: Build Windows
+    name: Build Windows ${{ matrix.arch }}
     runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, Win32]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,7 +69,7 @@ jobs:
           submodules: recursive
 
       - name: Configure CMake
-        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+        run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -A ${{ matrix.arch }}
 
       - name: Build
         run: cmake --build build --config Release --parallel 4
@@ -94,13 +97,13 @@ jobs:
 
       - name: Zip Artifacts
         run: |
-          Compress-Archive -Path artifacts/* -DestinationPath Dawdrey-Windows.zip
+          Compress-Archive -Path artifacts/* -DestinationPath Dawdrey-Windows-${{ matrix.arch }}.zip
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Dawdrey-Windows
-          path: Dawdrey-Windows.zip
+          name: Dawdrey-Windows-${{ matrix.arch }}
+          path: Dawdrey-Windows-${{ matrix.arch }}.zip
 
   release_linux:
     name: Build Linux
@@ -173,7 +176,8 @@ jobs:
           ## Downloads
 
           - **MacOS**: `Dawdrey-MacOS/Dawdrey-macOS.zip`
-          - **Windows**: `Dawdrey-Windows/Dawdrey-Windows.zip`
+          - **Windows (x64)**: `Dawdrey-Windows-x64/Dawdrey-Windows-x64.zip`
+          - **Windows (x86)**: `Dawdrey-Windows-Win32/Dawdrey-Windows-Win32.zip`
           - **Linux**: `Dawdrey-Linux/Dawdrey-Linux.zip`
 
           ## Installation
@@ -184,8 +188,9 @@ jobs:
           3. Copy `Dawdrey.vst3` to `/Library/Audio/Plug-Ins/VST3` or `~/Library/Audio/Plug-Ins/VST3`
 
           ### Windows
-          1. Unzip `Dawdrey-Windows.zip`
-          2. Copy `Dawdrey.vst3` to `C:\Program Files\Common Files\VST3`
+          1. Download the zip for your architecture (x64 or x86).
+          2. Unzip it.
+          3. Copy `Dawdrey.vst3` to `C:\Program Files\Common Files\VST3` (x64) or `C:\Program Files (x86)\Common Files\VST3` (x86).
 
           ### Linux
           1. Unzip `Dawdrey-Linux.zip`
